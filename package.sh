@@ -53,20 +53,46 @@ echo "==> Creating ${DMG_PATH}"
 DMG_STAGE="$(mktemp -d)/dmg-stage"
 mkdir -p "$DMG_STAGE"
 cp -R "$BUNDLE" "$DMG_STAGE/"
-# Add a symlink so user can drag the .plugin straight into the OBS plugins dir.
-ln -s "$HOME/Library/Application Support/obs-studio/plugins" "$DMG_STAGE/Drag plugin here"
-# Add a short README inside the dmg.
+
+# A double-clickable installer script. It uses $HOME so it resolves to the
+# user's own home directory at click time — no hard-coded paths.
+cat > "$DMG_STAGE/Install.command" <<'INSTALLER'
+#!/usr/bin/env bash
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+BUNDLE="$HERE/obs-mac-game-auto-capture.plugin"
+DEST="$HOME/Library/Application Support/obs-studio/plugins"
+
+if [ ! -d "$BUNDLE" ]; then
+    osascript -e 'display alert "Plugin bundle missing" message "obs-mac-game-auto-capture.plugin was not found next to this installer." as critical'
+    exit 1
+fi
+
+mkdir -p "$DEST"
+# Replace any prior install (both bundle layout and the legacy loose layout
+# from very early versions).
+rm -rf "$DEST/obs-mac-game-auto-capture.plugin"
+rm -rf "$DEST/obs-mac-game-auto-capture"
+cp -R "$BUNDLE" "$DEST/obs-mac-game-auto-capture.plugin"
+
+osascript -e 'display alert "Plugin installed" message "Quit OBS Studio if it is running, then open it again. Add a source → Mac Game Auto Capture." buttons {"OK"} default button "OK"'
+INSTALLER
+chmod +x "$DMG_STAGE/Install.command"
+
 cat > "$DMG_STAGE/INSTALL.txt" <<EOF
 ${DISPLAY_NAME} ${VERSION}
 
 To install:
-  1. Drag "${PLUGIN_NAME}.plugin" onto the "Drag plugin here" alias.
-  2. Quit OBS if it's running, then open it again.
-  3. Add a source → "${DISPLAY_NAME}".
+  1. Double-click "Install.command".
+  2. macOS may ask whether to allow it — open System Settings → Privacy &
+     Security and click "Open Anyway" if needed.
+  3. Quit OBS Studio if it is running, then open it again.
+  4. Add a source → "${DISPLAY_NAME}".
 
-If macOS warns the plugin is from an unidentified developer:
-  System Settings → Privacy & Security → scroll down to the warning
-  about the plugin → click "Open Anyway".
+Manual alternative:
+  Copy "${PLUGIN_NAME}.plugin" to
+    ~/Library/Application Support/obs-studio/plugins/
+  Then restart OBS.
 
 Requirements: macOS 14+, OBS Studio 30+, Apple Silicon.
 EOF
