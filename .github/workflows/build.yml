@@ -1,0 +1,70 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - "**/*.md"
+      - "CHANGELOG.md"
+      - "LICENSE"
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          brew update >/dev/null
+          brew list cmake >/dev/null 2>&1 || brew install cmake
+          xcode-select -p >/dev/null 2>&1 || sudo xcode-select --install || true
+
+      - name: Cache OBS deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/obs-deps
+            .deps/obs-studio
+          key: obsdeps-${{ runner.os }}-arm64-${{ hashFiles('buildspec.json') }}
+
+      - name: Stage OBS.app (runner has no OBS)
+        run: |
+          # The build script links against the libobs dylib inside OBS.app.
+          # Download a pre-built OBS or use libobs from obs-deps. Simpler:
+          # vendor libobs into .deps from the obs-studio source build.
+          # For CI, build a stub libobs.framework using the source-only header
+          # path approach already wired into CMakeLists.txt and an empty .dylib.
+          # We just need link-time symbols, not actual OBS at CI time.
+          mkdir -p .deps/obs-studio
+          if [ ! -d /Applications/OBS.app ]; then
+            curl -fL -o /tmp/obs.dmg \
+              "https://cdn-fastly.obsproject.com/downloads/obs-studio-30.2.3-macos-arm64.dmg" \
+              || true
+            if [ -f /tmp/obs.dmg ]; then
+              hdiutil attach -nobrowse /tmp/obs.dmg -mountpoint /tmp/obsdmg
+              cp -R /tmp/obsdmg/OBS.app /Applications/ || true
+              hdiutil detach /tmp/obsdmg || true
+            fi
+          fi
+
+      - name: Build plugin
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Package
+        run: |
+          chmod +x package.sh
+          ./package.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-mac-game-auto-capture-${{ github.sha }}-arm64
+          path: dist/*
+          if-no-files-found: error

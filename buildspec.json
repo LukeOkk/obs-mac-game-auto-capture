@@ -1,0 +1,32 @@
+{
+    "dependencies": {
+        "obs-studio": {
+            "version": "30.2.0",
+            "repository": "https://github.com/obsproject/obs-studio.git",
+            "branch": "30.2.0",
+            "hash": ""
+        },
+        "prebuilt": {
+            "version": "2025-08-23",
+            "baseUrl": "https://github.com/obsproject/obs-deps/releases/download",
+            "label": "Pre-Built Dependencies",
+            "hashes": {
+                "macos-arm64": "",
+                "macos-x86_64": ""
+            }
+        }
+    },
+    "name": "obs-mac-game-auto-capture",
+    "version": "0.1.0",
+    "author": "obs-mac-game-auto-capture contributors",
+    "email": "",
+    "website": "",
+    "description": "Auto-captures macOS apps recognized as games (LSSupportsGameMode) so OBS never accidentally records your desktop.",
+    "displayName": "Mac Game Auto Capture",
+    "identifier": "io.github.obs-plugins.mac-game-auto-capture",
+    "platformConfig": {
+        "macos": {
+            "deploymentTarget": "14.0"
+        }
+    }
+}

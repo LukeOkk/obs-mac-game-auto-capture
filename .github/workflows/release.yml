@@ -1,0 +1,48 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
+
+jobs:
+  release:
+    runs-on: macos-14
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          brew list cmake >/dev/null 2>&1 || brew install cmake
+
+      - name: Stage OBS.app
+        run: |
+          if [ ! -d /Applications/OBS.app ]; then
+            curl -fL -o /tmp/obs.dmg \
+              "https://cdn-fastly.obsproject.com/downloads/obs-studio-30.2.3-macos-arm64.dmg"
+            hdiutil attach -nobrowse /tmp/obs.dmg -mountpoint /tmp/obsdmg
+            cp -R /tmp/obsdmg/OBS.app /Applications/
+            hdiutil detach /tmp/obsdmg
+          fi
+
+      - name: Build + package
+        run: |
+          chmod +x build.sh package.sh
+          ./package.sh
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/*.zip
+            dist/*.dmg

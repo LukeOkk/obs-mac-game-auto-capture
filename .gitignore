@@ -1,0 +1,42 @@
+# Build output
+build/
+build_*/
+.deps/
+dist/
+*.plugin/
+*.dmg
+*.zip
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# IDE / editor
+.cache/
+.vscode/
+.idea/
+*.xcodeproj/
+DerivedData/
+*.swp
+*~
+
+# macOS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Logs
+*.log
+build.log
+
+# Graphify (developer knowledge graph — not part of the plugin)
+graphify-out/
+
+# Local config that should never be committed
+.env
+.envrc
+secrets.json
