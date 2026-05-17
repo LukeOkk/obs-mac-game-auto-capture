@@ -32,25 +32,20 @@ jobs:
             .deps/obs-studio
           key: obsdeps-${{ runner.os }}-arm64-${{ hashFiles('buildspec.json') }}
 
-      - name: Stage OBS.app (runner has no OBS)
+      - name: Stage OBS.app
         run: |
-          # The build script links against the libobs dylib inside OBS.app.
-          # Download a pre-built OBS or use libobs from obs-deps. Simpler:
-          # vendor libobs into .deps from the obs-studio source build.
-          # For CI, build a stub libobs.framework using the source-only header
-          # path approach already wired into CMakeLists.txt and an empty .dylib.
-          # We just need link-time symbols, not actual OBS at CI time.
-          mkdir -p .deps/obs-studio
+          # Download the OBS Studio macOS DMG from the obsproject GitHub
+          # release and copy the .app into /Applications so build.sh can link
+          # against libobs inside it. The Apple DMG is universal (arm64+x86).
           if [ ! -d /Applications/OBS.app ]; then
+            OBS_TAG="32.1.2"
             curl -fL -o /tmp/obs.dmg \
-              "https://cdn-fastly.obsproject.com/downloads/obs-studio-30.2.3-macos-arm64.dmg" \
-              || true
-            if [ -f /tmp/obs.dmg ]; then
-              hdiutil attach -nobrowse /tmp/obs.dmg -mountpoint /tmp/obsdmg
-              cp -R /tmp/obsdmg/OBS.app /Applications/ || true
-              hdiutil detach /tmp/obsdmg || true
-            fi
+              "https://github.com/obsproject/obs-studio/releases/download/${OBS_TAG}/OBS-Studio-${OBS_TAG}-macOS-Apple.dmg"
+            hdiutil attach -nobrowse /tmp/obs.dmg -mountpoint /tmp/obsdmg
+            cp -R /tmp/obsdmg/OBS.app /Applications/
+            hdiutil detach /tmp/obsdmg
           fi
+          ls -la /Applications/OBS.app/Contents/Frameworks/libobs.framework/libobs
 
       - name: Build plugin
         run: |

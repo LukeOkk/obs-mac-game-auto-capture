@@ -25,13 +25,18 @@ jobs:
 
       - name: Stage OBS.app
         run: |
+          # Download the OBS Studio macOS DMG from the obsproject GitHub
+          # release and copy the .app into /Applications so build.sh can link
+          # against libobs inside it. The Apple DMG is universal (arm64+x86).
           if [ ! -d /Applications/OBS.app ]; then
+            OBS_TAG="32.1.2"
             curl -fL -o /tmp/obs.dmg \
-              "https://cdn-fastly.obsproject.com/downloads/obs-studio-30.2.3-macos-arm64.dmg"
+              "https://github.com/obsproject/obs-studio/releases/download/${OBS_TAG}/OBS-Studio-${OBS_TAG}-macOS-Apple.dmg"
             hdiutil attach -nobrowse /tmp/obs.dmg -mountpoint /tmp/obsdmg
             cp -R /tmp/obsdmg/OBS.app /Applications/
             hdiutil detach /tmp/obsdmg
           fi
+          ls -la /Applications/OBS.app/Contents/Frameworks/libobs.framework/libobs
 
       - name: Build + package
         run: |
