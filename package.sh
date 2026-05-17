@@ -18,8 +18,9 @@ cd "$(dirname "$0")"
 PLUGIN_NAME="obs-mac-game-auto-capture"
 DISPLAY_NAME="Mac Game Auto Capture"
 ARCH="$(uname -m)"
-VERSION="$(grep '"version"' buildspec.json | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')"
-[ -z "$VERSION" ] && VERSION="dev"
+# Parse the plugin's top-level "version" (the obs-studio dependency also has
+# a "version" field, so we use Python's json module to read the right one).
+VERSION="$(/usr/bin/python3 -c "import json,sys; print(json.load(open('buildspec.json'))['version'])" 2>/dev/null || echo "dev")"
 
 BUNDLE="build/${PLUGIN_NAME}.plugin"
 if [ ! -d "$BUNDLE" ]; then
